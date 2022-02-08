@@ -11,7 +11,7 @@ from threading import Thread
 from time import sleep, time
 import kafka
 from kafka import KafkaProducer, KafkaConsumer
-from kafka.errors import KafkaError
+from kafka.errors import KafkaError, NoBrokersAvailable
 
 LOG_EVERY = 10000
 BOOTSTRAP_SERVERS = ["lab-dwh-kafka-broker-illab1-001.illab1.cynet:6667"]
@@ -27,23 +27,34 @@ class ElapsedTime:
 
 class ThreadConsumer:
     def __init__(self, topics):
-        self.consumer = KafkaConsumer(
-            topics,
-            bootstrap_servers=BOOTSTRAP_SERVERS,
-            client_id="test_avi",
-        )
         self.connected = False
         self.msg_count = 0
+        self.topics = topics
+
+    def connect(self):
+        try:
+            self.consumer = KafkaConsumer(
+                *self.topics,
+                bootstrap_servers=BOOTSTRAP_SERVERS,
+                client_id="test_avi",
+            )
+        except NoBrokersAvailable:
+            print(f"Failed to connect to {BOOTSTRAP_SERVERS}")
+            return False
+
+        print(f"Connecting {self.consumer}")
+        # See https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html
+        bootstrap_connected = self.consumer.bootstrap_connected()
+        if not bootstrap_connected:
+            return False
+
+        return True
 
     def run(self):
         while True:
-            # See https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html
-            bootstrap_connected = self.consumer.bootstrap_connected()
-            if not bootstrap_connected:
-                print(f"Connecting {self.consumer}")
-                sleep(1)
-                continue
-            break
+            if self.connect():
+                break
+            sleep(1)
 
         topics = self.consumer.topics()
         print(f"Connected: I see {len(topics)} topics: {list(topics)[:5]}")
@@ -91,7 +102,7 @@ if __name__ == "__main__":
     print(kafka.__version__)
 
     topic_avi = "topic_test_avi"
-    consumer = ThreadConsumer(topic_avi)
+    consumer = ThreadConsumer([topic_avi])
     Thread(target=consumer.run).start()
     while not consumer.connected:
         sleep(1.0)
