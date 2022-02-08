@@ -24,6 +24,9 @@ class ElapsedTime:
     def __call__(self):
         return time() - self.start
 
+def round_float(value, decimals=0):
+    mul = 10**decimals
+    return int(mul*value)/mul
 
 class ThreadConsumer:
     def __init__(self, topics):
@@ -64,7 +67,7 @@ class ThreadConsumer:
             self.msg_count += 1
             if not self.msg_count % LOG_EVERY:
                 print(
-                    f"I have received {self.msg_count} messages, rate {self.msg_count/et()} msg/s"
+                    f"I have received {self.msg_count} messages, rate {round_float(self.msg_count/et())} msg/s"
                 )
 
 
@@ -87,14 +90,14 @@ class ThreadProducer:
             self.msg_count += 1
             if not self.msg_count % LOG_EVERY:
                 self.producer.flush()
-                print(f"I have sent {self.msg_count} messages, rate {self.msg_count/et()} msg/s")
+                print(f"I have sent {self.msg_count} messages, rate {round_float(self.msg_count/et())} msg/s")
 
             if consumer.msg_count < self.msg_count - LOG_EVERY:
                 et_wait = ElapsedTime()
                 while consumer.msg_count < self.msg_count:
                     sleep(0.1)
                 print(
-                    f"Waited {et_wait()}s for cosnumer to catch up"
+                    f"Waited {round_float(et_wait(), 2)}s for cosnumer to catch up"
                 )
 
 
