@@ -3,7 +3,7 @@ Usage:
 
 black Source/automation/test_kafka.py
 pip3 install kafka-python
-python3 Source/automation/test_kafka.py
+python3 ./test_kafka.py
 
 """
 
